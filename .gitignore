@@ -33,3 +33,4 @@ venv.bak/
 .vscode/
 .idea/
 *.log
+credenciais.json
