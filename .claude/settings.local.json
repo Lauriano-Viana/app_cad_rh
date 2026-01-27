@@ -6,7 +6,14 @@
       "Bash(\"C:\\\\Users\\\\Lauriano\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -c \"import streamlit; print\\(streamlit.__version__\\)\")",
       "Bash(findstr:*)",
       "Bash(where:*)",
-      "Bash(\"C:\\\\Users\\\\Lauriano\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\Scripts\\\\streamlit.exe\" run \"c:\\\\Users\\\\Lauriano\\\\Documents\\\\documentos-seres\\\\TI\\\\app_cad_rh\\\\app.py\")"
+      "Bash(\"C:\\\\Users\\\\Lauriano\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\Scripts\\\\streamlit.exe\" run \"c:\\\\Users\\\\Lauriano\\\\Documents\\\\documentos-seres\\\\TI\\\\app_cad_rh\\\\app.py\")",
+      "Bash(git for-each-ref:*)",
+      "Bash(while read ref)",
+      "Bash(do git update-ref -d \"$ref\")",
+      "Bash(done)",
+      "Bash(git update-ref:*)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)"
     ]
   }
 }
