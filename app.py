@@ -183,8 +183,7 @@ def main():
             st.markdown("### 🏢 Informações Profissionais")
             diretoria = st.selectbox(
                 "Diretoria *",
-                ["Selecione uma opção", "Diretoria Financeira", "Diretoria de Recursos Humanos", 
-                 "Diretoria Operacional", "Diretoria de Tecnologia", "Diretoria Administrativa"],
+                ["Selecione uma opção", "GABINETE", "DAFIN", "DAPP", "DIPAS", "DIRES", "DIRSIN"],
                 key="diretoria"
             )
             
