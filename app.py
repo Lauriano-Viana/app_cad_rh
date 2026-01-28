@@ -429,17 +429,299 @@ def main():
                         dados = sheet.get_all_values()
 
                         if len(dados) > 1:
+                            # Cabeçalhos reais da planilha
                             df = pd.DataFrame(dados[1:], columns=dados[0])
-                            st.dataframe(df, use_container_width=True, height=400)
 
-                            # Download CSV
-                            csv = df.to_csv(index=False, encoding='utf-8-sig')
+                            # Nomes amigáveis para exibição
+                            NOMES_EXIBICAO = {
+                                'data_hora': 'Data/Hora Cadastro',
+                                'nome': 'Nome Completo',
+                                'cpf': 'CPF',
+                                'endereco': 'Endereço',
+                                'email': 'E-mail',
+                                'telefone': 'Telefone',
+                                'idade': 'Idade',
+                                'data_nascimento': 'Data de Nascimento',
+                                'Diretoria': 'Diretoria',
+                                'comorbidade': 'Possui Comorbidade',
+                                'desc_comorbidade': 'Descrição Comorbidade',
+                                'tipo_sanguineo': 'Tipo Sanguíneo',
+                                'plano_saude': 'Possui Plano de Saúde',
+                                'nome_plano': 'Nome do Plano',
+                                'estado_civil': 'Estado Civil',
+                                'nome_conjuge': 'Nome Cônjuge/Companheiro(a)',
+                                'idade_conjuge': 'Idade Cônjuge/Companheiro(a)',
+                                'possui_filhos': 'Possui Filhos',
+                                'qtd_filhos': 'Quantidade de Filhos',
+                                'emerg1_nome': 'Emergência 1 - Nome',
+                                'emerg1_telefone': 'Emergência 1 - Telefone',
+                                'emerg1_parentesco': 'Emergência 1 - Parentesco',
+                                'emerg2_nome': 'Emergência 2 - Nome',
+                                'emerg2_telefone': 'Emergência 2 - Telefone',
+                                'emerg2_parentesco': 'Emergência 2 - Parentesco'
+                            }
+
+                            # ===== PESQUISA E FILTROS =====
+                            st.markdown("### 🔍 Pesquisa e Filtros")
+                            col_busca, col_diretoria = st.columns([2, 1])
+
+                            with col_busca:
+                                termo_busca = st.text_input(
+                                    "Buscar por nome, CPF, e-mail ou telefone",
+                                    key="termo_busca",
+                                    placeholder="Digite para pesquisar..."
+                                )
+
+                            with col_diretoria:
+                                diretorias_disponiveis = ["Todas"] + sorted(
+                                    [d for d in df["Diretoria"].unique().tolist() if d.strip()]
+                                )
+                                filtro_diretoria = st.selectbox(
+                                    "Filtrar por Diretoria",
+                                    diretorias_disponiveis,
+                                    key="filtro_diretoria"
+                                )
+
+                            # Aplicar filtro de busca (usa nomes originais da planilha)
+                            df_filtrado = df.copy()
+                            if termo_busca:
+                                termo = termo_busca.lower()
+                                mascara = (
+                                    df_filtrado["nome"].str.lower().str.contains(termo, na=False) |
+                                    df_filtrado["cpf"].str.lower().str.contains(termo, na=False) |
+                                    df_filtrado["email"].str.lower().str.contains(termo, na=False) |
+                                    df_filtrado["telefone"].str.lower().str.contains(termo, na=False)
+                                )
+                                df_filtrado = df_filtrado[mascara]
+
+                            # Aplicar filtro de diretoria
+                            if filtro_diretoria != "Todas":
+                                df_filtrado = df_filtrado[df_filtrado["Diretoria"] == filtro_diretoria]
+
+                            # ===== ORDENAÇÃO =====
+                            col_ord_campo, col_ord_dir = st.columns([2, 1])
+                            with col_ord_campo:
+                                # Mostrar nomes amigáveis no selectbox
+                                colunas_display = [NOMES_EXIBICAO.get(c, c) for c in df.columns.tolist()]
+                                coluna_idx = st.selectbox(
+                                    "Ordenar por",
+                                    range(len(colunas_display)),
+                                    index=1,  # Nome por padrão
+                                    format_func=lambda x: colunas_display[x],
+                                    key="coluna_ordenar"
+                                )
+                                coluna_ordenar = df.columns[coluna_idx]
+                            with col_ord_dir:
+                                direcao = st.radio(
+                                    "Direção",
+                                    ["Crescente (A→Z)", "Decrescente (Z→A)"],
+                                    horizontal=True,
+                                    key="direcao_ordenar"
+                                )
+
+                            ascendente = direcao == "Crescente (A→Z)"
+                            df_filtrado = df_filtrado.sort_values(by=coluna_ordenar, ascending=ascendente, ignore_index=True)
+
+                            st.markdown(f"**{len(df_filtrado)}** registro(s) encontrado(s)")
+                            st.markdown("---")
+
+                            # ===== EXIBIÇÃO DA TABELA =====
+                            df_filtrado_exibicao = df_filtrado.rename(columns=NOMES_EXIBICAO)
+                            st.dataframe(df_filtrado_exibicao, use_container_width=True, height=400)
+
+                            # Download CSV (dados filtrados)
+                            csv = df_filtrado_exibicao.to_csv(index=False, encoding='utf-8-sig')
                             st.download_button(
                                 label="📥 Baixar como CSV",
                                 data=csv,
                                 file_name=f"funcionarios_{datetime.now(FUSO_BRASIL).strftime('%Y%m%d_%H%M%S')}.csv",
                                 mime="text/csv"
                             )
+
+                            st.markdown("---")
+
+                            # ===== EDITAR / EXCLUIR REGISTROS =====
+                            st.markdown("### ✏️ Editar ou Excluir Registro")
+
+                            if len(df_filtrado) == 0:
+                                st.info("Nenhum registro para editar ou excluir com os filtros atuais.")
+                            else:
+                                # Seleção do registro
+                                opcoes_registro = [
+                                    f"{i+1} - {row['nome']} (CPF: {row['cpf']})"
+                                    for i, row in df_filtrado.iterrows()
+                                ]
+                                registro_selecionado = st.selectbox(
+                                    "Selecione o registro",
+                                    opcoes_registro,
+                                    key="registro_selecionado"
+                                )
+
+                                idx_filtrado = opcoes_registro.index(registro_selecionado)
+                                registro = df_filtrado.iloc[idx_filtrado]
+
+                                tab_editar, tab_excluir = st.tabs(["✏️ Editar", "🗑️ Excluir"])
+
+                                # ===== ABA EDITAR =====
+                                with tab_editar:
+                                    with st.form("form_editar"):
+                                        st.markdown(f"**Editando:** {registro['nome']}")
+
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            edit_nome = st.text_input("Nome Completo", value=registro.get("nome", ""), key="edit_nome")
+                                            edit_cpf = st.text_input("CPF", value=registro.get("cpf", ""), key="edit_cpf")
+                                            edit_email = st.text_input("E-mail", value=registro.get("email", ""), key="edit_email")
+                                            edit_telefone = st.text_input("Telefone", value=registro.get("telefone", ""), key="edit_telefone")
+                                            edit_idade = st.text_input("Idade", value=str(registro.get("idade", "")), key="edit_idade")
+                                            edit_data_nasc = st.text_input("Data de Nascimento", value=registro.get("data_nascimento", ""), key="edit_data_nasc")
+                                            edit_endereco = st.text_area("Endereço", value=registro.get("endereco", ""), key="edit_endereco")
+
+                                        with col2:
+                                            diretorias = ["GABINETE", "DAFIN", "DAPP", "DIPAS", "DIRES", "DIRSIN"]
+                                            idx_dir = diretorias.index(registro.get("Diretoria", "GABINETE")) if registro.get("Diretoria", "") in diretorias else 0
+                                            edit_diretoria = st.selectbox("Diretoria", diretorias, index=idx_dir, key="edit_diretoria")
+
+                                            edit_comorbidade = st.radio("Possui Comorbidade?", ["Não", "Sim"], index=0 if registro.get("comorbidade", "Não") == "Não" else 1, key="edit_comorbidade")
+                                            edit_desc_comorbidade = st.text_area("Descrição Comorbidade", value=registro.get("desc_comorbidade", ""), key="edit_desc_comorbidade")
+
+                                            tipos_sang = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]
+                                            idx_ts = tipos_sang.index(registro.get("tipo_sanguineo", "O+")) if registro.get("tipo_sanguineo", "") in tipos_sang else 0
+                                            edit_tipo_sang = st.selectbox("Tipo Sanguíneo", tipos_sang, index=idx_ts, key="edit_tipo_sang")
+
+                                            edit_plano_saude = st.radio("Possui Plano de Saúde?", ["Não", "Sim"], index=0 if registro.get("plano_saude", "Não") == "Não" else 1, key="edit_plano_saude")
+                                            edit_nome_plano = st.text_input("Nome do Plano", value=registro.get("nome_plano", ""), key="edit_nome_plano")
+
+                                            estados_civis = ["Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"]
+                                            idx_ec = estados_civis.index(registro.get("estado_civil", "Solteiro(a)")) if registro.get("estado_civil", "") in estados_civis else 0
+                                            edit_estado_civil = st.selectbox("Estado Civil", estados_civis, index=idx_ec, key="edit_estado_civil")
+
+                                        st.markdown("**Família**")
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            edit_nome_conjuge = st.text_input("Nome Cônjuge/Companheiro(a)", value=registro.get("nome_conjuge", ""), key="edit_nome_conjuge")
+                                            edit_idade_conjuge = st.text_input("Idade Cônjuge", value=str(registro.get("idade_conjuge", "")), key="edit_idade_conjuge")
+                                        with col2:
+                                            edit_possui_filhos = st.radio("Possui Filhos?", ["Não", "Sim"], index=0 if registro.get("possui_filhos", "Não") == "Não" else 1, key="edit_possui_filhos")
+                                            edit_qtd_filhos = st.text_input("Quantidade de Filhos", value=str(registro.get("qtd_filhos", "0")), key="edit_qtd_filhos")
+
+                                        st.markdown("**Contatos de Emergência**")
+                                        col1, col2, col3 = st.columns(3)
+                                        with col1:
+                                            edit_e1_nome = st.text_input("Emergência 1 - Nome", value=registro.get("emerg1_nome", ""), key="edit_e1_nome")
+                                        with col2:
+                                            edit_e1_tel = st.text_input("Emergência 1 - Telefone", value=registro.get("emerg1_telefone", ""), key="edit_e1_tel")
+                                        with col3:
+                                            edit_e1_par = st.text_input("Emergência 1 - Parentesco", value=registro.get("emerg1_parentesco", ""), key="edit_e1_par")
+
+                                        col1, col2, col3 = st.columns(3)
+                                        with col1:
+                                            edit_e2_nome = st.text_input("Emergência 2 - Nome", value=registro.get("emerg2_nome", ""), key="edit_e2_nome")
+                                        with col2:
+                                            edit_e2_tel = st.text_input("Emergência 2 - Telefone", value=registro.get("emerg2_telefone", ""), key="edit_e2_tel")
+                                        with col3:
+                                            edit_e2_par = st.text_input("Emergência 2 - Parentesco", value=registro.get("emerg2_parentesco", ""), key="edit_e2_par")
+
+                                        salvar_btn = st.form_submit_button("💾 Salvar Alterações", use_container_width=True)
+
+                                        if salvar_btn:
+                                            erros_edicao = []
+                                            if not edit_nome.strip():
+                                                erros_edicao.append("Nome é obrigatório")
+                                            if not validar_cpf(edit_cpf):
+                                                erros_edicao.append("CPF inválido")
+                                            if not validar_email(edit_email):
+                                                erros_edicao.append("E-mail inválido")
+
+                                            if erros_edicao:
+                                                st.error("❌ Erros encontrados:")
+                                                for e in erros_edicao:
+                                                    st.write(f"• {e}")
+                                            else:
+                                                try:
+                                                    linha_atualizada = [
+                                                        registro.get("data_hora", ""),
+                                                        edit_nome,
+                                                        formatar_cpf(edit_cpf),
+                                                        edit_endereco,
+                                                        edit_email,
+                                                        formatar_telefone(edit_telefone),
+                                                        edit_idade,
+                                                        edit_data_nasc,
+                                                        edit_diretoria,
+                                                        edit_comorbidade,
+                                                        edit_desc_comorbidade,
+                                                        edit_tipo_sang,
+                                                        edit_plano_saude,
+                                                        edit_nome_plano,
+                                                        edit_estado_civil,
+                                                        edit_nome_conjuge,
+                                                        edit_idade_conjuge,
+                                                        edit_possui_filhos,
+                                                        edit_qtd_filhos,
+                                                        edit_e1_nome,
+                                                        formatar_telefone(edit_e1_tel),
+                                                        edit_e1_par,
+                                                        edit_e2_nome,
+                                                        formatar_telefone(edit_e2_tel),
+                                                        edit_e2_par
+                                                    ]
+
+                                                    # Buscar linha real na planilha pelo CPF + Nome
+                                                    cpf_original = registro.get("cpf", "")
+                                                    nome_original = registro.get("nome", "")
+                                                    todas_linhas = sheet.get_all_values()
+                                                    linha_real = None
+                                                    for idx_l, linha in enumerate(todas_linhas):
+                                                        if idx_l == 0:
+                                                            continue  # pular cabeçalho
+                                                        if len(linha) > 2 and linha[2] == cpf_original and linha[1] == nome_original:
+                                                            linha_real = idx_l + 1  # gspread usa base 1
+                                                            break
+
+                                                    if linha_real:
+                                                        nc = len(linha_atualizada)
+                                                        ultima_coluna = chr(ord('A') + nc - 1) if nc <= 26 else 'Y'
+                                                        intervalo = f"A{linha_real}:{ultima_coluna}{linha_real}"
+                                                        sheet.update(intervalo, [linha_atualizada])
+                                                        st.success("✅ Registro atualizado com sucesso!")
+                                                        st.rerun()
+                                                    else:
+                                                        st.error("❌ Não foi possível localizar o registro na planilha.")
+
+                                                except Exception as e:
+                                                    st.error(f"❌ Erro ao atualizar: {str(e)}")
+
+                                # ===== ABA EXCLUIR =====
+                                with tab_excluir:
+                                    st.markdown(f"**Registro selecionado:** {registro['nome']} — CPF: {registro['cpf']}")
+
+                                    st.warning("⚠️ Esta ação é irreversível. O registro será permanentemente removido da planilha.")
+
+                                    confirmar = st.checkbox("Confirmo que desejo excluir este registro", key="confirmar_exclusao")
+
+                                    if st.button("🗑️ Excluir Registro", type="primary", disabled=not confirmar, key="btn_excluir"):
+                                        try:
+                                            cpf_original = registro.get("cpf", "")
+                                            nome_original = registro.get("nome", "")
+                                            todas_linhas = sheet.get_all_values()
+                                            linha_real = None
+                                            for idx_l, linha in enumerate(todas_linhas):
+                                                if idx_l == 0:
+                                                    continue
+                                                if len(linha) > 2 and linha[2] == cpf_original and linha[1] == nome_original:
+                                                    linha_real = idx_l + 1
+                                                    break
+
+                                            if linha_real:
+                                                sheet.delete_rows(linha_real)
+                                                st.success("✅ Registro excluído com sucesso!")
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Não foi possível localizar o registro na planilha.")
+                                        except Exception as e:
+                                            st.error(f"❌ Erro ao excluir: {str(e)}")
+
                         else:
                             st.info("Nenhum funcionário cadastrado ainda.")
                     else:
