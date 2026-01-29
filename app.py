@@ -555,10 +555,18 @@ def main():
                                     f"{i+1} - {row['nome']} (CPF: {row['cpf']})"
                                     for i, row in df_filtrado.iterrows()
                                 ]
+
+                                # Callback para limpar campos de edição quando mudar o registro
+                                def limpar_campos_edicao():
+                                    keys_edicao = [k for k in st.session_state.keys() if k.startswith("edit_")]
+                                    for k in keys_edicao:
+                                        del st.session_state[k]
+
                                 registro_selecionado = st.selectbox(
                                     "Selecione o registro",
                                     opcoes_registro,
-                                    key="registro_selecionado"
+                                    key="registro_selecionado",
+                                    on_change=limpar_campos_edicao
                                 )
 
                                 idx_filtrado = opcoes_registro.index(registro_selecionado)
