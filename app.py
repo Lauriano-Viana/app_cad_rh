@@ -224,7 +224,7 @@ def main():
             with col1:
                 estado_civil = st.selectbox(
                     "Estado Civil *",
-                    ["Selecione", "Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"],
+                    ["Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"],
                     key="estado_civil"
                 )
                 
@@ -292,8 +292,6 @@ def main():
                     erros.append("Diretoria é obrigatória")
                 if tipo_sanguineo == "Selecione":
                     erros.append("Tipo sanguíneo é obrigatório")
-                if estado_civil == "Selecione":
-                    erros.append("Estado civil é obrigatório")
                 if comorbidade == "Sim" and not desc_comorbidade:
                     erros.append("Descreva a comorbidade se respondeu sim")
                 if plano_saude == "Sim" and not nome_plano:
