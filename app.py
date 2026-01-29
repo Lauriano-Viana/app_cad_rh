@@ -176,7 +176,13 @@ def main():
             
             with col2:
                 idade = st.number_input("Idade *", min_value=18, max_value=100, key="idade")
-                data_nascimento = st.date_input("Data de Nascimento *", key="data_nascimento", format="DD/MM/YYYY")
+                data_nascimento = st.date_input(
+                    "Data de Nascimento *",
+                    key="data_nascimento",
+                    format="DD/MM/YYYY",
+                    min_value=date(1924, 1, 1),
+                    max_value=date.today()
+                )
                 endereco = st.text_area("Endereço *", key="endereco", height=80)
             
             # ===== SEÇÃO 2: INFORMAÇÕES PROFISSIONAIS =====
