@@ -225,6 +225,7 @@ def main():
                 estado_civil = st.selectbox(
                     "Estado Civil *",
                     ["Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"],
+                    index=0,
                     key="estado_civil"
                 )
                 
